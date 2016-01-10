@@ -1,0 +1,80 @@
+Source: tigervnc
+Section: x11
+Priority: optional
+Maintainer: Jani Hakala <jjhakala@gmail.com>
+Standards-Version: 3.8.4
+Build-Depends: debhelper (>> 9.0), quilt, cmake,
+	       autoconf, automake, libtool,
+	       default-jdk, libgcrypt-dev, libpam0g-dev,
+	       libgnutls28-dev, libjpeg62-turbo-dev,
+	       xutils-dev, libx11-dev, libfltk1.3-dev,
+	       libfontconfig1-dev, xorg-dev, xserver-xorg-dev,
+	       libxshmfence-dev, libgl1-mesa-dev,
+	       imagemagick, xorg-server-source, xfonts-utils,
+	       x11proto-dri2-dev (>= 2.8),
+	       x11proto-gl-dev (>= 1.4.17),
+	       x11proto-core-dev (>= 7.0.26),
+	       libpixman-1-dev (>= 0.27.2)
+Homepage: http://www.tigervnc.com
+
+Package: tigervnc-server
+Architecture: amd64 i386
+Provides: xserver, vnc-server
+Depends:  ${shlibs:Depends}, ${misc:Depends}, ${perl:Depends}, x11-common | xserver-common, x11-utils, xauth
+Recommends: xfonts-base, x11-xserver-utils
+Suggests: tigervnc-viewer, tigervnc-java
+Description: virtual network computing server software
+ Virtual Network Computing (VNC) is a remote display system which allows you to
+ view and interact with a virtual desktop environment that is running on another
+ computer on the network.  Using VNC, you can run graphical applications on a
+ remote machine and send only the display from these applications to your local
+ machine.  VNC is platform-independent and supports a wide variety of operating
+ systems and architectures as both servers and clients.
+ .
+ TigerVNC is a high-speed version of VNC based on the RealVNC 4 and X.org code
+ bases.  TigerVNC started as a next-generation development effort for TightVNC
+ on Unix and Linux platforms, but it split from its parent project in early 2009
+ so that TightVNC could focus on Windows platforms.  TigerVNC supports a variant
+ of Tight encoding that is greatly accelerated by the use of the libjpeg-turbo
+ JPEG codec.
+
+Package: tigervnc-viewer
+Architecture: amd64 i386
+Provides: vncviewer, vnc-viewer
+Depends:  ${shlibs:Depends}, ${misc:Depends}
+Recommends: xfonts-base
+Suggests: tigervnc-server, ssh
+Description: virtual network computing client software for X
+ Virtual Network Computing (VNC) is a remote display system which allows you to
+ view and interact with a virtual desktop environment that is running on another
+ computer on the network.  Using VNC, you can run graphical applications on a
+ remote machine and send only the display from these applications to your local
+ machine.  VNC is platform-independent and supports a wide variety of operating
+ systems and architectures as both servers and clients.
+ .
+ TigerVNC is a high-speed version of VNC based on the RealVNC 4 and X.org code
+ bases.  TigerVNC started as a next-generation development effort for TightVNC
+ on Unix and Linux platforms, but it split from its parent project in early 2009
+ so that TightVNC could focus on Windows platforms.  TigerVNC supports a variant
+ of Tight encoding that is greatly accelerated by the use of the libjpeg-turbo
+ JPEG codec.
+
+Package: tigervnc-java
+Architecture: any
+Suggests: tigervnc-server
+Provides: vncviewer, vnc-viewer
+Depends:  default-jre
+Description: TigerVNC java applet
+ Virtual Network Computing (VNC) is a remote display system which allows you to
+ view and interact with a virtual desktop environment that is running on another
+ computer on the network.  Using VNC, you can run graphical applications on a
+ remote machine and send only the display from these applications to your local
+ machine.  VNC is platform-independent and supports a wide variety of operating
+ systems and architectures as both servers and clients.
+ .
+ TigerVNC is a high-speed version of VNC based on the RealVNC 4 and X.org code
+ bases.  TigerVNC started as a next-generation development effort for TightVNC
+ on Unix and Linux platforms, but it split from its parent project in early 2009
+ so that TightVNC could focus on Windows platforms.  TigerVNC supports a variant
+ of Tight encoding that is greatly accelerated by the use of the libjpeg-turbo
+ JPEG codec.

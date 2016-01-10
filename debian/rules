@@ -1,0 +1,276 @@
+#!/usr/bin/make -f
+#
+export DEB_BUILD_MAINT_OPTIONS=hardening=+all
+
+CFLAGS   := $(shell dpkg-buildflags --get CFLAGS)
+CPPFLAGS := $(shell dpkg-buildflags --get CPPFLAGS)
+CXXFLAGS := $(shell dpkg-buildflags --get CXXFLAGS)
+LDFLAGS  := $(shell dpkg-buildflags --get LDFLAGS)
+
+export CFLAGS CPPFLAGS CXXFLAGS LDFLAGS
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+# These are used for cross-compiling and for saving the configure script
+# from having to guess our platform (since we know it already)
+#DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+#DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+DEB_HOST_ARCH      ?= $(shell dpkg-architecture -qDEB_HOST_ARCH)
+DEB_HOST_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+DEB_BUILD_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+DEB_HOST_ARCH_OS   ?= $(shell dpkg-architecture -qDEB_HOST_ARCH_OS)
+ifeq ($(DEB_BUILD_GNU_TYPE), $(DEB_HOST_GNU_TYPE))
+	confflags += --build=$(DEB_HOST_GNU_TYPE)
+else
+	confflags += --build=$(DEB_BUILD_GNU_TYPE) --host=$(DEB_HOST_GNU_TYPE)
+endif
+SOURCE_NAME    := tigervnc
+SOURCE_VERSION := $(shell dpkg-parsechangelog | awk -F': ' '/^Version: / {print $$2}')
+BUILDER=For technical support please see http://sourceforge.net/projects/tigervnc/support
+libdir = /usr/lib/$(DEB_HOST_MULTIARCH)
+
+ifneq (,$(findstring debug,$(DEB_BUILD_OPTIONS)))
+	CFLAGS += -g -O2 -fPIC
+endif
+ifeq (,$(findstring nostrip,$(DEB_BUILD_OPTIONS)))
+	INSTALL_PROGRAM += -s
+endif
+
+NUMJOBS = 1
+
+ifneq (,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+ NUMJOBS = $(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+endif
+
+export CC = gcc
+
+XCFLAGS = -Wall -Wunused -Wno-format-y2k -fPIE -fno-strict-aliasing
+
+get-orig-source:
+	uscan --repack --compression xz --force-download --download-current-version
+
+configure: config-stamp
+config-stamp:
+	dh_testdir
+
+	-mkdir build
+	cd build ; tar xf /usr/src/xorg-server.tar.*
+
+	cd build/xorg-server ; patch -p1 < ../../unix/xserver116.patch
+
+	cp -r unix/xserver/hw/vnc build/xorg-server/hw/
+
+	cd build ; \
+	  cmake -G"Unix Makefiles" \
+	  -DBUILD_STATIC=off \
+	  -DCMAKE_INSTALL_PREFIX=/usr $(CURDIR)
+
+	cd build/xorg-server && autoreconf -fiv && \
+	./configure --prefix=/usr \
+	--with-os-vendor="$(VENDOR)" \
+	--with-builderstring="$(SOURCE_NAME) $(SOURCE_VERSION) ($(BUILDER))" \
+	--disable-silent-rules \
+	--disable-static \
+	--without-dtrace \
+	--disable-strict-compilation \
+	--disable-debug \
+	--disable-unit-tests \
+	--with-int10=x86emu \
+	--with-xkb-path=/usr/share/X11/xkb \
+	--with-xkb-output=/var/lib/xkb \
+	--with-default-xkb-rules=evdev \
+	--disable-devel-docs \
+	--disable-install-libxf86config \
+	--enable-mitshm \
+	--enable-xres \
+	--disable-xcsecurity \
+	--disable-tslib \
+	--enable-dbe \
+	--disable-xf86bigfont \
+	--disable-dpms \
+	--disable-config-hal \
+	--disable-config-udev \
+	--disable-xorg \
+	--disable-xquartz \
+	--disable-xwin \
+	--disable-xfake \
+	--disable-install-setuid \
+	--with-default-font-path="/usr/share/fonts/X11/misc,/usr/share/fonts/X11/cyrillic,/usr/share/fonts/X11/100dpi/:unscaled,/usr/share/fonts/X11/75dpi/:unscaled,/usr/share/fonts/X11/Type1,/usr/share/fonts/X11/100dpi,/usr/share/fonts/X11/75dpi,/var/lib/defoma/x-ttcidfont-conf.d/dirs/TrueType,built-ins" \
+	--enable-aiglx \
+	--enable-glx-tls \
+	--enable-registry \
+	--enable-composite \
+	--enable-record \
+	--enable-xv \
+	--enable-xvmc \
+	--enable-dga \
+	--enable-screensaver \
+	--enable-xdmcp \
+	--enable-xdm-auth-1 \
+	--enable-glx \
+	--disable-dri --enable-dri2 --enable-dri3 \
+	--disable-xinerama \
+	--enable-xf86vidmode \
+	--enable-xace \
+	--enable-xfree86-utils \
+	--disable-dmx \
+	--disable-xvfb \
+	--disable-xnest \
+	--disable-kdrive \
+	--disable-xephyr \
+	--enable-xfbdev \
+	--with-sha1=libgcrypt \
+	--enable-xcsecurity \
+	--disable-docs \
+	--disable-selective-werror
+
+	touch config-stamp
+
+build-arch: build-arch-stamp
+build-arch-stamp: config-stamp
+	dh_testdir
+
+	cd build ; make -j$(NUMJOBS)
+	cd build/xorg-server; make -j$(NUMJOBS)
+
+	touch build-arch-stamp
+
+build-indep: build-indep-stamp
+build-indep-stamp: config-stamp
+	dh_testdir
+
+	cd build/media ; make
+
+	-mkdir -p build/java
+	cd build/java ; cmake -G"Unix Makefiles" $(CURDIR)/java ; make
+
+	touch build-indep-stamp
+
+build: build-arch build-indep
+
+clean:
+	dh_testdir
+	dh_testroot
+
+	rm -f build-arch-stamp build-indep-stamp config-stamp
+	rm -rf build
+
+# Add here commands to clean up after the build process.
+	dh_clean
+
+install: DH_OPTIONS=
+install: build
+	dh_testdir
+	dh_testroot
+	dh_prep
+	dh_installdirs
+# Add here commands to install the package into debian/vnc.
+# tigervnc-server
+	cd build ; make install DESTDIR=$(CURDIR)/debian/tmp
+	cd build/xorg-server/hw/vnc ; make install DESTDIR=$(CURDIR)/debian/tmp
+	cd build/vncviewer ; make install DESTDIR=$(CURDIR)/debian/tmp
+	cd build/java ; make install DESTDIR=$(CURDIR)/debian/tmp/usr/share
+
+	cd $(CURDIR)/debian/tmp/usr/bin; \
+	for file in vncconfig vncpasswd vncserver vncviewer x0vncserver Xvnc; do \
+	  mv -i $$file `echo $$file | sed -e 's#vnc#tigervnc#'`; \
+	done
+
+	cd $(CURDIR)/debian/tmp/usr/share/man/man1; \
+	for file in vncconfig vncpasswd vncserver vncviewer x0vncserver Xvnc; do \
+	  mv -i $$file.1 `echo $$file.1 | sed -e 's#vnc#tigervnc#'`; \
+	done
+
+	mv $(CURDIR)/debian/tmp/usr/share/doc/tigervnc-* \
+		$(CURDIR)/debian/tmp/usr/share/doc/tigervnc-server
+
+	#install -o root -g root -m 755 -D $(CURDIR)/debian/local/vncserver.service \
+	#	$(CURDIR)/debian/tmp/etc/init.d/vncserver
+	#install -o root -g root -m 644 -D $(CURDIR)/debian/local/vncserver.sysconfig \
+	#	$(CURDIR)/debian/tmp/etc/default/vncservers
+
+	# Install desktop stuff
+
+	install -o root -g root -m 644 -D media/icons/tigervnc_16.png \
+		$(CURDIR)/debian/tmp/usr/share/icons/hicolor/16x16/apps/tigervnc.png
+	install -o root -g root -m 644 -D media/icons/tigervnc_22.png \
+		$(CURDIR)/debian/tmp/usr/share/icons/hicolor/22x22/apps/tigervnc.png
+	install -o root -g root -m 644 -D media/icons/tigervnc_24.png \
+		$(CURDIR)/debian/tmp/usr/share/icons/hicolor/24x24/apps/tigervnc.png
+	install -o root -g root -m 644 -D media/icons/tigervnc_32.png \
+		$(CURDIR)/debian/tmp/usr/share/icons/hicolor/32x32/apps/tigervnc.png
+	install -o root -g root -m 644 -D media/icons/tigervnc_48.png \
+		$(CURDIR)/debian/tmp/usr/share/icons/hicolor/48x48/apps/tigervnc.png
+	install -o root -g root -m 644 -D media/icons/tigervnc.svg \
+		$(CURDIR)/debian/tmp/usr/share/icons/hicolor/scalable/apps/tigervnc.svg
+
+	dh_install
+	# tigervnc-java
+
+# Build architecture-independent files here.
+# Pass -i to all debhelper commands in this target to reduce clutter.
+binary-indep: build install
+
+binary-indep-keep:
+	dh_testdir -i
+	dh_testroot -i
+#	dh_installdebconf -i
+	dh_install
+	dh_installdocs -i
+	dh_installexamples -i
+	dh_installmenu -i
+#	dh_installlogrotate -i
+#	dh_installemacsen -i
+#	dh_installpam -i
+#	dh_installmime -i
+#	dh_installinit -i
+	dh_installcron -i
+	dh_installman -i
+	dh_installinfo -i
+#	dh_undocumented -i
+	dh_installchangelogs  -i
+	dh_link -i
+	dh_compress -i
+	dh_fixperms -i
+	dh_installdeb -i
+	dh_perl -i
+	dh_gencontrol -i
+	dh_md5sums -i
+	dh_builddeb -i
+
+# Build architecture-dependent files here.
+binary-arch: build install
+	dh_testdir -a
+	dh_testroot -a
+#	dh_installdebconf -a
+	dh_installdocs -a
+#	dh_installexamples -a
+	dh_installmenu -a
+#	dh_installlogrotate -a
+#	dh_installemacsen -a
+#	dh_installpam -a
+#	dh_installmime -a
+	dh_install
+	dh_installinit -a
+#	dh_installcron -a
+	dh_installman -a
+	dh_installinfo -a
+#	dh_undocumented -a
+	dh_installchangelogs  -a
+	# Remove empty directories
+	dh_strip -a
+	dh_link -a
+	dh_compress -a
+	dh_fixperms -a
+	dh_makeshlibs -a
+	dh_installdeb -a
+	dh_perl -a
+	dh_shlibdeps -a
+	dh_gencontrol -a
+	dh_md5sums -a
+	dh_builddeb -a
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install get-orig-source

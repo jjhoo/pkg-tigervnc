@@ -1,0 +1,41 @@
+Description: Fix build problems
+ Fix build problems
+ .
+ tigervnc (1.4.2-1) unstable; urgency=medium
+ .
+   * Build for debian.
+Author: Jani Hakala <jahakala@iki.fi>
+
+---
+The information above should follow the Patch Tagging Guidelines, please
+checkout http://dep.debian.net/deps/dep3/ to learn about the format. Here
+are templates for supplementary fields that you might want to add:
+
+Origin: <vendor|upstream|other>, <url of original patch>
+Bug: <url in upstream bugtracker>
+Bug-Debian: https://bugs.debian.org/<bugnumber>
+Bug-Ubuntu: https://launchpad.net/bugs/<bugnumber>
+Forwarded: <no|not-needed|url proving that it has been forwarded>
+Reviewed-By: <name and email of someone who approved the patch>
+Last-Update: <YYYY-MM-DD>
+
+--- tigervnc-1.4.2.orig/vncviewer/CMakeLists.txt
++++ tigervnc-1.4.2/vncviewer/CMakeLists.txt
+@@ -46,7 +46,7 @@ else()
+   add_executable(vncviewer ${VNCVIEWER_SOURCES})
+ endif()
+ 
+-target_link_libraries(vncviewer rfb network rdr os Xregion ${FLTK_LIBRARIES} ${GETTEXT_LIBRARIES})
++target_link_libraries(vncviewer rfb network rdr os Xregion ${FLTK_LIBRARIES} ${GETTEXT_LIBRARIES} dl)
+ 
+ if(APPLE)
+   target_link_libraries(vncviewer "-framework Cocoa" "-framework Carbon")
+--- tigervnc-1.4.2.orig/unix/xserver/hw/vnc/Makefile.am
++++ tigervnc-1.4.2/unix/xserver/hw/vnc/Makefile.am
+@@ -1,5 +1,5 @@
+ TIGERVNC_SRCDIR=${top_srcdir}/../..
+-LIB_DIR=${top_builddir}/../../common
++LIB_DIR=${top_builddir}/../common
+ 
+ RFB_LIB=$(LIB_DIR)/rfb/librfb.la
+ RDR_LIB=$(LIB_DIR)/rdr/librdr.la

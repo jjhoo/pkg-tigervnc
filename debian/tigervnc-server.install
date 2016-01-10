@@ -1,0 +1,11 @@
+usr/bin/Xtigervnc
+usr/bin/tigervncconfig
+usr/bin/tigervncpasswd
+usr/bin/tigervncserver
+usr/bin/x0tigervncserver
+usr/share/man/man1/tigervncconfig.1
+usr/share/man/man1/tigervncpasswd.1
+usr/share/man/man1/tigervncserver.1
+usr/share/man/man1/x0tigervncserver.1
+usr/share/man/man1/Xtigervnc.1
+usr/share/doc/tigervncserver
