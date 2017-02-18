@@ -8,4 +8,4 @@ usr/share/man/man1/tigervncpasswd.1
 usr/share/man/man1/tigervncserver.1
 usr/share/man/man1/x0tigervncserver.1
 usr/share/man/man1/Xtigervnc.1
-usr/share/doc/tigervncserver
+usr/share/doc/tigervnc-server
